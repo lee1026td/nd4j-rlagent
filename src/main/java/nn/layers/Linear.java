@@ -55,6 +55,8 @@ public class Linear implements Module {
 
     @Override
     public Tensor forward(Tensor X, boolean training) {
+        if(X.ndim() == 1) X = X.reshape(1, X.size());
+
         this.X = X;
 
         // Y = XW
@@ -65,7 +67,7 @@ public class Linear implements Module {
             Y = Y.add(b.getData());
         }
 
-        if(training) {
+        if(training && dropoutProb != 0.0) {
             cDrop = MaskUtils.dropoutMaskLike(Y, dropoutProb);
             Y = Y.mul(cDrop);
         }
@@ -133,5 +135,10 @@ public class Linear implements Module {
     public void setParameters(List<Parameter> parameters) {
         this.W = parameters.get(0);
         this.b = parameters.get(1);
+    }
+
+    @Override
+    public String toString() {
+        return "Linear : (" + inFeatures + ", " + outFeatures + ")";
     }
 }

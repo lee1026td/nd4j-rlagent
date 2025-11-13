@@ -6,11 +6,13 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.cpu.nativecpu.NDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.ops.NDBase;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.Arrays;
+import java.util.stream.IntStream;
 
 public class Tensor implements ITensor {
 
@@ -50,6 +52,10 @@ public class Tensor implements ITensor {
         return new Tensor(Nd4j.createFromArray(data).reshape(shape));
     }
 
+    public static Tensor from(float[] data, int... shape) {
+        return new Tensor(Nd4j.createFromArray(data).reshape(shape));
+    }
+
     public static Tensor from(double[][] data) {
         return new Tensor(Nd4j.createFromArray(data));
     }
@@ -72,6 +78,12 @@ public class Tensor implements ITensor {
             arrs[i] = tensors[i].getNDArray(); // 또는 tensors[i].data
         }
         return new Tensor(org.nd4j.linalg.factory.Nd4j.concat(axis, arrs));
+    }
+
+    public static Tensor vstack(Tensor... tensors) {
+        INDArray[] arr = new INDArray[tensors.length];
+        for (int i = 0; i < tensors.length; i++) { arr[i] = tensors[i].getNDArray(); }
+        return new Tensor(Nd4j.vstack(arr));
     }
 
     public static Tensor arange(int start, int end) {
@@ -177,6 +189,13 @@ public class Tensor implements ITensor {
         return new Tensor(data.argMax(axis));
     }
 
+    /* GATHER 문제 있음 */
+    @Override
+    public Tensor gather(int axis, int... indices) {
+        NDBase ndBase = new NDBase();
+        return new Tensor(ndBase.gather(data, indices, axis));
+    }
+
     @Override
     public Tensor add(Tensor other) {
         return new Tensor(data.add(other.data));
@@ -234,7 +253,7 @@ public class Tensor implements ITensor {
             return BatchedOps.bmmulND2(this, other);
         }
         else {
-            throw new IllegalArgumentException("Matmul shape mismatch");
+            throw new IllegalArgumentException("Matmul shape mismatch : " + this.getShapeToString() + ", " + other.getShapeToString());
         }
     }
 

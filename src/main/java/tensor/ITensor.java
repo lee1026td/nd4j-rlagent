@@ -19,6 +19,7 @@ public interface ITensor {
     Tensor expandDims(int axis);
     Tensor squeeze(int axis);
     Tensor argmax(int axis);
+    Tensor gather(int axis, int... indices);
 
     Tensor add(Tensor other);
     Tensor sub(Tensor other);

@@ -6,8 +6,13 @@ import nn.loss.Loss;
 import nn.loss.MSELoss;
 import nn.optimizer.Adam;
 import nn.optimizer.Optimizer;
+import org.bytedeco.javacpp.Pointer;
+import org.nd4j.linalg.factory.Nd4j;
 import tensor.Tensor;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 
 public class DQNAgent implements Agent {
@@ -24,6 +29,10 @@ public class DQNAgent implements Agent {
     private double epsStart, epsEnd, eps;
     private int epsDecaySteps;
     private int epsStep;
+
+    private final int warmupSteps;        // Buffer warmups
+    private final int targetSyncEvery;    // Target network sync interval
+    private int trainSteps;
 
     private final Random rand = new Random();
 
@@ -57,6 +66,10 @@ public class DQNAgent implements Agent {
         this.epsEnd = epsEnd;
         this.epsDecaySteps = epsDecaySteps;
         this.epsStep = 0;
+
+        this.warmupSteps = Math.max(1000, batchSize * 5);
+        this.targetSyncEvery = 1000;
+        this.trainSteps = 0;
     }
 
     // Epsilon-Greedy policy
@@ -72,7 +85,7 @@ public class DQNAgent implements Agent {
     }
 
     // Store the Experience instance into ReplayBuffer : (s, a, r, s', done)
-    public void store(Tensor state, int action, double reward, Tensor nextState, boolean done) {
+        public void store(Tensor state, Integer action, Double reward, Tensor nextState, Boolean done) {
         buffer.store(new Experience(state, action, reward, nextState, done));
     }
 
@@ -88,18 +101,76 @@ public class DQNAgent implements Agent {
 
     public boolean learn() {
         stepEpsilon();
+        if(buffer.size() < warmupSteps) {
+            return false;
+        }
 
+        trainSteps++;
+
+        // Sample transition (experience) batches of size batchSize from ReplayBuffer
         Experience[] batch = buffer.sample(batchSize);
 
-        evalNet.zeroGrad();
-
-        Tensor states, nextStates;
-        int[] actions = new int[batchSize];
+        Tensor[] states = new Tensor[batchSize];
+        Tensor[] nextStates = new Tensor[batchSize];
+        int[] actions = new int[batchSize];         // [batchSize]
+        double[] rewards = new double[batchSize];   // [batchSize]
+        boolean[] dones = new boolean[batchSize];   // [batchSize]
 
         for(int i=0;i<batchSize;i++) {
             Experience e = batch[i];
+            states[i] = e.state;
+            nextStates[i] = e.nextState;
+            actions[i] = e.action;
+            rewards[i] = e.reward;
+            dones[i] = e.done;
         }
+
+        Tensor s = Tensor.vstack(states);            // [batchSize, stateSize]
+        Tensor sNext = Tensor.vstack(nextStates);    // [batchSize, stateSize]
+
+        // Evaluation from samples : Q(s,.)
+        Tensor qEval = evalNet.forward(s, true);    // [batchSize, actionSize]
+
+        System.out.println("qEval : " + qEval);
+        // Get Q(s,a)
+        Tensor qSA = qEval.gather(-1, actions);         // [batchSize]
+
+        // Next state evaluation from Target Network : Q'(s',.)
+        Tensor qNext = targetNet.forward(sNext, false); // [batchSize, actionSize]
+        // max_a' Q'(s',a')
+        Tensor maxQNext = qNext.max(1, false);    // [batchSize]
+
+        // Compute TD target : y = r + gamma * (1 - done) * max_a' Q'(s',a')
+        double[] targetArr = new double[batchSize];
+        for(int i=0;i<batchSize;i++) {
+            targetArr[i] = rewards[i] + gamma * (1.0 - (dones[i] ? 1.0 : 0.0)) * maxQNext.getDouble(i);
+        }
+
+        Tensor target = Tensor.from(targetArr, batchSize);
+
+        System.out.println("qSA : " + qSA);
+        System.out.println("target : " + target);
+        // Compute loss
+        double loss = mseLoss.forward(qSA, target);
+
+        Tensor dLoss = mseLoss.backward();
+        System.out.println(dLoss);
+
+        // Backpropagate dLoss to evalNet
+        evalNet.backward(dLoss);
+        evalNet.update(optimizer);
+        evalNet.zeroGrad();
+
+        syncTargetNetwork();
 
         return true;
     }
+
+    private void syncTargetNetwork() {
+        if(trainSteps % targetSyncEvery == 0) {
+            targetNet.copyFrom(evalNet);
+        }
+    }
+
+
 }

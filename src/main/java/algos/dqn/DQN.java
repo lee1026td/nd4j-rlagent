@@ -48,7 +48,7 @@ public class DQN implements Module {
         Tensor dX = (scale == 1.0) ? dY : dY.mul(scale);
 
         for(Linear layer : layers) {
-            dX = layer.forward(dX, accumulate);
+            dX = layer.calcGradients(dX, accumulate, scale);
             dX = hiddenActivation.backward(dX);
         }
 
@@ -87,5 +87,18 @@ public class DQN implements Module {
         for(int i=0,j=0;i<layers.size();i++,j+=2) {
             layers.get(i).setParameters(List.of(sourceParams.get(j), sourceParams.get(j+1)));
         }
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("DQN {\n");
+        for(Linear layer : layers) {
+            sb.append("\t" + layer.toString() + "\n");
+        }
+        sb.append("}\n");
+
+        return sb.toString();
     }
 }

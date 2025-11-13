@@ -1,9 +1,62 @@
 import gymnasium as gym
 from py4j.java_gateway import JavaGateway
+from py4j.java_collections import JavaArray, ListConverter
+from py4j.protocol import DOUBLE_TYPE
+import numpy as np
+
+env = gym.make("CartPole-v1")
 
 gateway = JavaGateway()
-
-env = gym.make('CartPole-v1')
-
+converter = ListConverter()
+client = gateway._gateway_client
 #create an instance of the DQN agent
-agent = gateway.entry_point.getAgent()
+entry = gateway.entry_point
+agent = entry.getAgent()
+
+num_episodes = 250
+
+def to_jlist(target) :
+    arr = np.asarray(target, dtype=np.float64).ravel()
+    py_list = [float(x) for x in arr]
+    java_list = converter.convert(py_list, client)
+
+    return java_list
+
+def to_2djlist(target) :
+    arr = np.asarray(target, dtype=np.float64)
+    rows = []
+
+    for row in arr :
+        py_row = [float(x) for x in row]
+        java_row = converter.convert(py_row, client)
+        rows.append[java_row]
+
+    java_2d = converter.convert(rows, client)
+
+    return java_2d
+
+for ep in range(num_episodes) :
+    obs, _ = env.reset()
+    done, trunc = False, False
+
+    total_reward = 0.0
+
+    while not (done or trunc) :
+        java_state = entry.tensorFromList(to_jlist(obs))
+
+        action = agent.act(java_state)
+
+        next_obs, reward, done, trunc, info = env.step(action)
+
+        java_nstate = entry.tensorFromList(to_jlist(next_obs))
+
+        agent.store(java_state, int(action), float(reward), java_nstate, bool(done or trunc))
+
+        agent.learn()
+
+        obs = next_obs
+
+    print(f"[Episode {ep:03d}] Return = {total_reward:.1f}")
+
+
+
