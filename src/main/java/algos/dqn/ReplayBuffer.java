@@ -25,7 +25,7 @@ public class ReplayBuffer {
     public Experience[] sample(int batchSize) {
         Experience[] samples = new Experience[batchSize];
         for(int i = 0; i < batchSize; i++) {
-            int k = ThreadLocalRandom.current().nextInt(size + 1);
+            int k = ThreadLocalRandom.current().nextInt(size);
 
             samples[i] = buffer[k];
         }

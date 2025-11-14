@@ -10,7 +10,7 @@ public class PyEnvEntryPoint {
 
     public PyEnvEntryPoint() {
         agent = new DQNAgent(
-            4, 2, 1e-3, 0.99, 1000, 64, 1.0, 0.05, 10000
+            4, 2, 1e-3, 0.99, 50000, 64, 1.0, 0.05, 3000
         );
     }
 

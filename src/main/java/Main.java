@@ -30,6 +30,7 @@ public class Main {
         GatewayServer gatewayServer = new GatewayServer(new PyEnvEntryPoint());
         gatewayServer.start();
         System.out.println("Gateway Server Started");
+
 /*
         int batchSize = 16;
         int hidden = 128;

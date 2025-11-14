@@ -51,8 +51,8 @@ public class DQNAgent implements Agent {
 
         this.batchSize = batchSize;
 
-        evalNet = new DQN(stateSize, actionSize, new ReLU(), 128, 128, 128);
-        targetNet = new DQN(stateSize, actionSize, new ReLU(), 128, 128, 128);
+        evalNet = new DQN(stateSize, actionSize, 128, 128, 128);
+        targetNet = new DQN(stateSize, actionSize, 128, 128, 128);
 
         targetNet.copyFrom(evalNet);
 
@@ -80,7 +80,8 @@ public class DQNAgent implements Agent {
             return rand.nextInt(actionSize);                        // Exploration
         } else {
             Tensor pred = evalNet.forward(state, false);
-            return pred.argmax(0).getInt(0);            // Exploitation
+            int act = pred.argmax(1).getInt(0);
+            return act;            // Exploitation
         }
     }
 
@@ -159,14 +160,12 @@ public class DQNAgent implements Agent {
         Tensor dY = Tensor.zeros(batchSize, actionSize);
         for(int i=0;i<batchSize;i++) {
             int a = actions[i];
-            double g = dLoss.getDouble(a);
+            double g = dLoss.getDouble(i);
             dY.set(g, i, a);
         }
 
-        System.out.println(dY);
-
         // Backpropagate dY to evalNet
-        evalNet.backward(dY);
+        evalNet.calcGradients(dY, false, 1.0);
         evalNet.update(optimizer);
         evalNet.zeroGrad();
 

@@ -1,6 +1,7 @@
 package algos.dqn;
 
 import nn.activation.Activation;
+import nn.activation.ReLU;
 import nn.core.Module;
 import nn.core.Parameter;
 import nn.initializer.HeNormal;
@@ -15,29 +16,36 @@ import java.util.List;
 public class DQN implements Module {
 
     private final List<Linear> layers;
-    private final Activation hiddenActivation;
+    private final List<Activation> activations;
 
-    public DQN(int stateSize, int actionSize, Activation hiddenActivation, int... hiddenSize) {
+    public DQN(int stateSize, int actionSize, int... hiddenSize) {
         assert(hiddenSize.length > 0);
 
         layers = new ArrayList<>();
-        this.hiddenActivation = hiddenActivation;
-        int layerNum = hiddenSize.length - 1;
+        activations = new ArrayList<>();
 
         layers.add(new Linear(stateSize, hiddenSize[0], new XavierNormal(), new HeNormal(), true));
-        for(int i=0; i<layerNum; i++) {
-            layers.add(new Linear(hiddenSize[i], hiddenSize[i+1], new XavierNormal(), new HeNormal(), true));
-        }
-        layers.add(new Linear(hiddenSize[layerNum], actionSize, new XavierNormal(), new HeNormal(), true));
-    }
+        activations.add(new ReLU());
 
+        for(int i=0;i<hiddenSize.length-1;i++) {
+            layers.add(new Linear(hiddenSize[i], hiddenSize[i+1], new XavierNormal(), new HeNormal(), true));
+            activations.add(new ReLU());
+        }
+
+        layers.add(new Linear(hiddenSize[hiddenSize.length-1], actionSize, new XavierNormal(), new HeNormal(), true));
+        activations.add(null);
+
+
+    }
 
     @Override
     public Tensor forward(Tensor X, boolean training) {
         Tensor Y = X;
-        for(Linear layer : layers) {
-            Y = layer.forward(Y, training);
-            Y = hiddenActivation.forward(Y);
+
+        for(int i=0;i<layers.size();i++) {
+            Y = layers.get(i).forward(Y, training);
+            Activation act = activations.get(i);
+            if(act != null) Y = act.forward(Y);
         }
 
         return Y;
@@ -47,9 +55,10 @@ public class DQN implements Module {
     public Tensor calcGradients(Tensor dY, boolean accumulate, double scale) {
         Tensor dX = (scale == 1.0) ? dY : dY.mul(scale);
 
-        for(int i=layers.size()-1; i>0; i--) {
+        for(int i=layers.size()-1;i>=0;i--) {
+            Activation act = activations.get(i);
+            if(act != null) dX = act.backward(dX);
             dX = layers.get(i).calcGradients(dX, accumulate, scale);
-            dX = hiddenActivation.backward(dX);
         }
 
         return dX;

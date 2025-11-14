@@ -321,26 +321,26 @@ public class Tensor implements ITensor {
 
     @Override
     public Tensor ge(double d) {
-        double[] mask = data.gte(d).toDoubleVector();
-        return Tensor.from(mask, this.shape());
+        double[][] mask = data.gte(d).toDoubleMatrix();
+        return Tensor.from(mask);
     }
 
     @Override
     public Tensor gt(double d) {
-        double[] mask = data.gt(d).toDoubleVector();
-        return Tensor.from(mask, this.shape());
+        double[][] mask = data.gt(d).toDoubleMatrix();
+        return Tensor.from(mask);
     }
 
     @Override
     public Tensor le(double d) {
-        double[] mask = data.lte(d).toDoubleVector();
-        return Tensor.from(mask, this.shape());
+        double[][] mask = data.lte(d).toDoubleMatrix();
+        return Tensor.from(mask);
     }
 
     @Override
     public Tensor lt(double d) {
-        double[] mask = data.lt(d).toDoubleVector();
-        return Tensor.from(mask, this.shape());
+        double[][] mask = data.lt(d).toDoubleMatrix();
+        return Tensor.from(mask);
     }
 
     @Override

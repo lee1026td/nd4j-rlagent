@@ -2,8 +2,9 @@ import gymnasium as gym
 from py4j.java_gateway import JavaGateway
 from py4j.java_collections import JavaArray, ListConverter
 import numpy as np
+import time
 
-env = gym.make("CartPole-v1")
+env = gym.make("CartPole-v1", render_mode="human")
 
 gateway = JavaGateway()
 converter = ListConverter()
@@ -12,7 +13,7 @@ client = gateway._gateway_client
 entry = gateway.entry_point
 agent = entry.getAgent()
 
-num_episodes = 250
+num_episodes = 100
 
 def to_jlist(target) :
     arr = np.asarray(target, dtype=np.float64).ravel()
@@ -57,6 +58,21 @@ for ep in range(num_episodes) :
         obs = next_obs
 
     print(f"[Episode {ep:03d}] Return = {total_reward:.1f}")
+
+
+obs, _ = env.reset()
+done, trunc = False, False
+
+while not (done or trunc) :
+        env.render()
+        action = agent.act(entry.tensorFromList(to_jlist(obs)))
+        next_obs, reward, done, _, _ = env.step(action)
+        obs = next_obs
+        time.sleep(0.1)
+
+env.close()   
+
+    
 
 
 
