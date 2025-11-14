@@ -1,16 +1,18 @@
 import gymnasium as gym
 from py4j.java_gateway import JavaGateway
-from py4j.java_collections import JavaArray, ListConverter
+from py4j.java_collections import ListConverter
 import numpy as np
 import time
 
+# Gym environment
 env = gym.make("CartPole-v1", render_mode="human")
 
 gateway = JavaGateway()
 converter = ListConverter()
 client = gateway._gateway_client
-#create an instance of the DQN agent
 entry = gateway.entry_point
+
+# Get an instance of the agent
 agent = entry.getAgent()
 
 num_episodes = 100
@@ -35,6 +37,7 @@ def to_2djlist(target) :
 
     return java_2d
 
+# Train loops
 for ep in range(num_episodes) :
     obs, _ = env.reset()
     done, trunc = False, False
@@ -59,7 +62,7 @@ for ep in range(num_episodes) :
 
     print(f"[Episode {ep:03d}] Return = {total_reward:.1f}")
 
-
+# Test the agent's performance
 obs, _ = env.reset()
 done, trunc = False, False
 

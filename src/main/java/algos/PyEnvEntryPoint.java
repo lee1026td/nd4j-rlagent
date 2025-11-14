@@ -6,15 +6,13 @@ import tensor.Tensor;
 import java.util.List;
 
 public class PyEnvEntryPoint {
-    private DQNAgent agent;
+    private Agent agent;
 
-    public PyEnvEntryPoint() {
-        agent = new DQNAgent(
-            4, 2, 1e-3, 0.99, 50000, 64, 1.0, 0.05, 3000
-        );
+    public PyEnvEntryPoint(Agent agent) {
+        this.agent = agent;
     }
 
-    public DQNAgent getAgent() {
+    public Agent getAgent() {
         return agent;
     }
 
