@@ -131,9 +131,12 @@ public class DQNAgent implements Agent {
         // Evaluation from samples : Q(s,.)
         Tensor qEval = evalNet.forward(s, true);    // [batchSize, actionSize]
 
-        System.out.println("qEval : " + qEval);
         // Get Q(s,a)
-        Tensor qSA = qEval.gather(-1, actions);         // [batchSize]
+        Tensor[] tmp = new Tensor[batchSize];
+        for(int i=0;i<batchSize;i++) {
+            tmp[i] = qEval.get(i, actions[i]);
+        }
+        Tensor qSA = Tensor.vstack(tmp);        // [batchSize]
 
         // Next state evaluation from Target Network : Q'(s',.)
         Tensor qNext = targetNet.forward(sNext, false); // [batchSize, actionSize]
@@ -148,20 +151,28 @@ public class DQNAgent implements Agent {
 
         Tensor target = Tensor.from(targetArr, batchSize);
 
-        System.out.println("qSA : " + qSA);
-        System.out.println("target : " + target);
         // Compute loss
         double loss = mseLoss.forward(qSA, target);
 
         Tensor dLoss = mseLoss.backward();
-        System.out.println(dLoss);
 
-        // Backpropagate dLoss to evalNet
-        evalNet.backward(dLoss);
+        Tensor dY = Tensor.zeros(batchSize, actionSize);
+        for(int i=0;i<batchSize;i++) {
+            int a = actions[i];
+            double g = dLoss.getDouble(a);
+            dY.set(g, i, a);
+        }
+
+        System.out.println(dY);
+
+        // Backpropagate dY to evalNet
+        evalNet.backward(dY);
         evalNet.update(optimizer);
         evalNet.zeroGrad();
 
         syncTargetNetwork();
+
+
 
         return true;
     }

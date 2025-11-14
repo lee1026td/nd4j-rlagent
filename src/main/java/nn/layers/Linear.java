@@ -80,6 +80,8 @@ public class Linear implements Module {
     public Tensor calcGradients(Tensor dY, boolean accumulate, double scale) {
         if(scale != 1.0) dY = dY.mul(scale);
         if(cDrop != null) dY = dY.mul(cDrop);
+        if(dY.ndim() == 1) dY = dY.reshape(1, dY.size());
+
 
         // dL/dW = X^T x dY
         Tensor dW = X.transpose(-1, -2).matmul(dY);

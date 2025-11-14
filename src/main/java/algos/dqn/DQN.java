@@ -47,8 +47,8 @@ public class DQN implements Module {
     public Tensor calcGradients(Tensor dY, boolean accumulate, double scale) {
         Tensor dX = (scale == 1.0) ? dY : dY.mul(scale);
 
-        for(Linear layer : layers) {
-            dX = layer.calcGradients(dX, accumulate, scale);
+        for(int i=layers.size()-1; i>0; i--) {
+            dX = layers.get(i).calcGradients(dX, accumulate, scale);
             dX = hiddenActivation.backward(dX);
         }
 

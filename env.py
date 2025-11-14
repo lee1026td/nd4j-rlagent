@@ -1,7 +1,6 @@
 import gymnasium as gym
 from py4j.java_gateway import JavaGateway
 from py4j.java_collections import JavaArray, ListConverter
-from py4j.protocol import DOUBLE_TYPE
 import numpy as np
 
 env = gym.make("CartPole-v1")
@@ -47,6 +46,7 @@ for ep in range(num_episodes) :
         action = agent.act(java_state)
 
         next_obs, reward, done, trunc, info = env.step(action)
+        total_reward += reward
 
         java_nstate = entry.tensorFromList(to_jlist(next_obs))
 

@@ -192,8 +192,7 @@ public class Tensor implements ITensor {
     /* GATHER 문제 있음 */
     @Override
     public Tensor gather(int axis, int... indices) {
-        NDBase ndBase = new NDBase();
-        return new Tensor(ndBase.gather(data, indices, axis));
+        return null;
     }
 
     @Override
